@@ -88,14 +88,70 @@ export class AiStrategyService {
       );
 
       const content = response.data.choices[0].message.content;
-      const jsonMatch = content.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
+      const strategies = this.parseStrategies(content);
+      if (strategies && strategies.length > 0) {
+        return this.sanitizeStrategies(strategies);
       }
       return this.getMockStrategies();
     } catch {
       return this.getMockStrategies();
     }
+  }
+
+  private parseStrategies(content: string): CoolingStrategy[] | null {
+    const candidates: string[] = [];
+
+    const codeBlockMatch = content.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/);
+    if (codeBlockMatch) {
+      candidates.push(codeBlockMatch[1].trim());
+    }
+
+    const bracketMatch = content.match(/(\[[\s\S]*\])/);
+    if (bracketMatch) {
+      candidates.push(bracketMatch[1].trim());
+    }
+
+    candidates.push(content.trim());
+
+    for (const candidate of candidates) {
+      try {
+        const parsed = JSON.parse(candidate);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+        if (parsed && typeof parsed === 'object') {
+          if (Array.isArray(parsed.strategies)) {
+            return parsed.strategies;
+          }
+          if (Array.isArray(parsed.data)) {
+            return parsed.data;
+          }
+          for (const value of Object.values(parsed)) {
+            if (Array.isArray(value)) {
+              return value;
+            }
+          }
+        }
+      } catch {}
+    }
+
+    return null;
+  }
+
+  private sanitizeStrategies(raw: any[]): CoolingStrategy[] {
+    return raw
+      .filter((item) => item && typeof item === 'object')
+      .map((item) => ({
+        room: String(item.room || item.roomId || item.name || '未知房间'),
+        schedule: {
+          on: String(item.schedule?.on || item.on || item.start || '08:00'),
+          off: String(item.schedule?.off || item.off || item.end || '21:00'),
+        },
+        temperature: typeof item.temperature === 'number'
+          ? item.temperature
+          : parseInt(String(item.temperature || item.temp || 26), 10) || 26,
+        reasoning: String(item.reasoning || item.reason || item.description || ''),
+      }));
   }
 
   private getMockStrategies(): CoolingStrategy[] {
