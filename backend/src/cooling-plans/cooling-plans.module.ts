@@ -3,9 +3,13 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { CoolingPlan, CoolingPlanSchema } from '../schemas/cooling-plan.schema';
 import { CoolingPlansService } from './cooling-plans.service';
 import { CoolingPlansController } from './cooling-plans.controller';
+import { SchedulerModule } from '../scheduler/scheduler.module';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: CoolingPlan.name, schema: CoolingPlanSchema }])],
+  imports: [
+    MongooseModule.forFeature([{ name: CoolingPlan.name, schema: CoolingPlanSchema }]),
+    SchedulerModule,
+  ],
   controllers: [CoolingPlansController],
   providers: [CoolingPlansService],
   exports: [CoolingPlansService],
