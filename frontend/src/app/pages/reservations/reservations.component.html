@@ -1,0 +1,96 @@
+<div class="page-header">
+  <div class="header-content">
+    <h1>预约看板</h1>
+    <p class="subtitle">实时查看各房间座位预约状态</p>
+  </div>
+  <mat-form-field appearance="outline" class="date-picker">
+    <mat-label>选择日期</mat-label>
+    <input matInput [matDatepicker]="picker" [(ngModel)]="selectedDate" (dateChange)="onDateChange()">
+    <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+    <mat-datepicker #picker></mat-datepicker>
+  </mat-form-field>
+</div>
+
+<div class="stats-row">
+  <mat-card class="stat-card">
+    <mat-card-content>
+      <div class="stat-icon" style="background: #0d948820; color: #0d9488;">
+        <mat-icon>event_seat</mat-icon>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ getTotalSeats() }}</span>
+        <span class="stat-label">总座位数</span>
+      </div>
+    </mat-card-content>
+  </mat-card>
+  <mat-card class="stat-card">
+    <mat-card-content>
+      <div class="stat-icon" style="background: #f9731620; color: #f97316;">
+        <mat-icon>person</mat-icon>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ getTotalOccupied() }}</span>
+        <span class="stat-label">已预约</span>
+      </div>
+    </mat-card-content>
+  </mat-card>
+  <mat-card class="stat-card">
+    <mat-card-content>
+      <div class="stat-icon" style="background: #3b82f620; color: #3b82f6;">
+        <mat-icon>confirmation_number</mat-icon>
+      </div>
+      <div class="stat-info">
+        <span class="stat-value">{{ getTotalReservations() }}</span>
+        <span class="stat-label">预约记录</span>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>
+
+@if (loading) {
+  <mat-card class="loading-card">
+    <mat-card-content>
+      <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+      <p>加载中...</p>
+    </mat-card-content>
+  </mat-card>
+} @else {
+  @for (room of rooms; track room._id) {
+    <mat-card class="room-card">
+      <mat-card-header>
+        <div class="room-header">
+          <div class="room-title-area">
+            <mat-icon class="room-icon" [class.ac-off]="!room.acEnabled">ac_unit</mat-icon>
+            <div>
+              <mat-card-title>{{ room.name }}</mat-card-title>
+              <mat-card-subtitle>
+                {{ getOccupiedCount(room) }}/{{ room.seats.length }} 已预约
+                @if (!room.acEnabled) { · 空调关闭 }
+              </mat-card-subtitle>
+            </div>
+          </div>
+          <mat-chip-set>
+            <mat-chip [color]="getOccupancyRate(room) > 70 ? 'warn' : getOccupancyRate(room) > 40 ? 'accent' : 'primary'" highlighted>
+              {{ getOccupancyRate(room) | number:'1.0-0' }}% 使用率
+            </mat-chip>
+          </mat-chip-set>
+        </div>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-progress-bar
+          mode="determinate"
+          [value]="getOccupancyRate(room)"
+          [color]="getOccupancyRate(room) > 70 ? 'warn' : 'primary'">
+        </mat-progress-bar>
+        <div class="seat-grid">
+          @for (seat of room.seats; track seat.id) {
+            <div class="seat-item" [ngClass]="getSeatStatusClass(seat.status)">
+              <mat-icon>{{ getSeatIcon(seat.status) }}</mat-icon>
+              <span class="seat-label">{{ seat.label }}</span>
+            </div>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+}

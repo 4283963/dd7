@@ -1,0 +1,26 @@
+.sidenav-container {
+  height: calc(100vh - 64px);
+}
+
+.sidenav {
+  width: 240px;
+  background: #f8fafc;
+  border-right: 1px solid #e2e8f0;
+}
+
+.sidenav-content {
+  background: #f1f5f9;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+::ng-deep .active-link {
+  background: rgba(13, 148, 136, 0.08) !important;
+  color: #0d9488 !important;
+  border-right: 3px solid #0d9488;
+}
+
+::ng-deep .mat-mdc-list-item {
+  border-radius: 8px;
+  margin: 2px 8px;
+}

@@ -1,0 +1,159 @@
+<div class="page-header">
+  <div>
+    <h1>AI 节能建议</h1>
+    <p class="subtitle">基于预约数据和天气预报，智能生成空调运行策略</p>
+  </div>
+</div>
+
+<div class="info-panels">
+  <div class="panel weather-panel">
+    <h3><mat-icon>wb_sunny</mat-icon> 未来 3 天天气</h3>
+    <div class="weather-cards">
+      @for (w of weather; track w.date) {
+        <mat-card class="weather-card">
+          <mat-card-content>
+            <mat-icon class="weather-icon" [style.color]="getWeatherColor(w.description)">
+              {{ getWeatherIcon(w.description) }}
+            </mat-icon>
+            <div class="weather-date">{{ formatDate(w.date) }}</div>
+            <div class="weather-desc">{{ w.description }}</div>
+            <div class="weather-temp">
+              <span class="temp-high">{{ w.tempMax }}°</span>
+              <span class="temp-divider">/</span>
+              <span class="temp-low">{{ w.tempMin }}°</span>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  </div>
+
+  <div class="panel reservation-panel">
+    <h3><mat-icon>people</mat-icon> 预约概览</h3>
+    @if (reservationSummary.length > 0) {
+      <div class="reservation-stats">
+        <div class="big-stat">
+          <span class="big-number">{{ getTotalReservations() }}</span>
+          <span class="big-label">总预约人次</span>
+        </div>
+        <div class="reservation-list">
+          @for (r of reservationSummary; track r.date + r.room) {
+            <div class="reservation-item">
+              <span class="res-date">{{ formatDate(r.date) }}</span>
+              <span class="res-room">{{ r.room }}</span>
+              <span class="res-count">{{ r.count }} 人</span>
+            </div>
+          }
+        </div>
+      </div>
+    } @else {
+      <p class="empty-text">点击下方按钮生成策略后查看预约统计</p>
+    }
+  </div>
+</div>
+
+<div class="generate-section">
+  <button mat-raised-button color="primary" class="generate-btn" (click)="generateStrategy()" [disabled]="generating">
+    @if (generating) {
+      <mat-icon class="spin">autorenew</mat-icon>
+    } @else {
+      <mat-icon>psychology</mat-icon>
+    }
+    {{ generating ? 'AI 分析中...' : '生成节能策略' }}
+  </button>
+</div>
+
+@if (generating) {
+  <mat-card class="loading-card">
+    <mat-card-content>
+      <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+      <p>正在调用大模型分析预约和天气数据...</p>
+    </mat-card-content>
+  </mat-card>
+}
+
+@if (strategies.length > 0 && !generating) {
+  <div class="strategies-section">
+    <div class="section-header">
+      <h2><mat-icon>ac_unit</mat-icon> 空调策略建议</h2>
+      <button mat-raised-button color="accent" (click)="adoptStrategy()" matTooltip="将策略保存至数据库">
+        <mat-icon>check_circle</mat-icon>
+        采纳策略
+      </button>
+    </div>
+    <div class="strategy-cards">
+      @for (s of strategies; track s.room) {
+        <mat-card class="strategy-card">
+          <mat-card-header>
+            <mat-icon class="strategy-room-icon">meeting_room</mat-icon>
+            <mat-card-title>{{ s.room }}</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="strategy-detail">
+              <div class="detail-row">
+                <mat-icon>schedule</mat-icon>
+                <span>开机时间：<strong>{{ s.schedule.on }}</strong></span>
+              </div>
+              <div class="detail-row">
+                <mat-icon>schedule</mat-icon>
+                <span>关机时间：<strong>{{ s.schedule.off }}</strong></span>
+              </div>
+              <div class="detail-row">
+                <mat-icon>thermostat</mat-icon>
+                <span>建议温度：<strong class="temp-value">{{ s.temperature }}°C</strong></span>
+              </div>
+            </div>
+            <div class="strategy-reasoning">
+              <mat-icon>lightbulb</mat-icon>
+              <span>{{ s.reasoning }}</span>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  </div>
+}
+
+<div class="history-section">
+  <h2><mat-icon>history</mat-icon> 已采纳策略</h2>
+  @if (coolingPlans.length === 0) {
+    <p class="empty-text">暂无已采纳的策略记录</p>
+  } @else {
+    <mat-accordion>
+      @for (plan of coolingPlans; track plan._id) {
+        <mat-expansion-panel class="plan-panel">
+          <mat-expansion-panel-header>
+            <mat-panel-title>
+              <mat-icon>check_circle</mat-icon>
+              {{ plan.adoptedAt | date:'yyyy-MM-dd HH:mm' }} · {{ plan.strategies.length }} 条策略
+            </mat-panel-title>
+            <mat-panel-description>
+              生成模型：{{ plan.generatedBy }}
+            </mat-panel-description>
+          </mat-expansion-panel-header>
+          <div class="plan-detail">
+            <div class="plan-strategies">
+              @for (s of plan.strategies; track s.room) {
+                <div class="plan-strategy-item">
+                  <span class="plan-room">{{ s.room }}</span>
+                  <span class="plan-schedule">{{ s.schedule.on }} - {{ s.schedule.off }}</span>
+                  <span class="plan-temp">{{ s.temperature }}°C</span>
+                </div>
+              }
+            </div>
+            @if (plan.weatherSnapshot && plan.weatherSnapshot.length > 0) {
+              <div class="plan-weather">
+                <span class="plan-label">当时天气：</span>
+                @for (w of plan.weatherSnapshot; track w.date) {
+                  <mat-chip>
+                    {{ w.date }} {{ w.description }} {{ w.tempMax }}°/{{ w.tempMin }}°
+                  </mat-chip>
+                }
+              </div>
+            }
+          </div>
+        </mat-expansion-panel>
+      }
+    </mat-accordion>
+  }
+</div>
